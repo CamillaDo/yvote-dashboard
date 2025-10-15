@@ -1,0 +1,32 @@
+# Data files (don't upload actual voting data)
+yvote_v3_log.csv
+state_v3.json
+dumps/
+*.csv
+*.json
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Virtual environment
+venv/
+env/
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
