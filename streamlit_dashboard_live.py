@@ -459,7 +459,7 @@ def render_sidebar(df, is_live, status_message):
     auto_refresh = st.sidebar.checkbox("🔄 Auto-refresh (30s)", value=False)
     
     if auto_refresh:
-        time.sleep(30)
+        time.sleep(120)
         st.rerun()
     
     st.sidebar.divider()
@@ -492,7 +492,7 @@ def render_sidebar(df, is_live, status_message):
             
             # Show data freshness
             st.write(f"**Last API Call:** {datetime.now().strftime('%H:%M:%S')}")
-            st.write(f"**Cache TTL:** 30 seconds")
+            st.write(f"**Cache TTL:** 120 seconds")
     
     # Debug section (optional)
     if st.sidebar.checkbox("🐛 Debug Mode", value=False):
