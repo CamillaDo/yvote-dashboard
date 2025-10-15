@@ -23,7 +23,7 @@ st.set_page_config(
 )
 
 # === STYLING ===
-st.markdown("""
+st.html("""
 <style>
     .main-header {
         font-size: 3rem;
@@ -67,10 +67,10 @@ st.markdown("""
         margin: 0.5rem 0;
     }
 </style>
-""", unsafe_allow_html=True)
+""")
 
 # === API CONFIGURATION ===
-API_ENDPOINT = "https://r.jina.ai/https://yvoting-service.onfan.vn/api/v1/nominations/spotlight"
+API_ENDPOINT = "https://yvoting-service.onfan.vn/api/v1/nominations/spotlight"
 AWARD_ID = "58e78a33-c7c9-4bd4-b536-f25fa75b68c2"
 
 # === DATA LOADING FUNCTIONS ===
@@ -192,17 +192,17 @@ def load_fallback_data():
 # === DASHBOARD COMPONENTS ===
 def render_header(is_live, status_message):
     """Render the main header and status"""
-    st.markdown('<div class="main-header">🗳️ YVote Live Monitor</div>', unsafe_allow_html=True)
+    st.html('<div class="main-header">🗳️ YVote Live Monitor</div>')
     
     # Status indicator
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if is_live:
-            st.markdown(f"""
+            st.html(f"""
             <div class="success-badge">
                 🟢 {status_message}
             </div>
-            """, unsafe_allow_html=True)
+            """)
         else:
             st.error(f"🔴 {status_message}")
 
@@ -218,38 +218,38 @@ def render_key_metrics(df, total_votes, is_live):
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.markdown(f"""
+        st.html(f"""
         <div class="metric-container">
             <h3>🗳️ Total Votes</h3>
             <h1>{total_votes:,}</h1>
         </div>
-        """, unsafe_allow_html=True)
+        """)
     
     with col2:
-        st.markdown(f"""
+        st.html(f"""
         <div class="metric-container">
             <h3>👥 Candidates</h3>
             <h1>{total_candidates}</h1>
         </div>
-        """, unsafe_allow_html=True)
+        """)
     
     with col3:
         data_type = "🟢 Live" if is_live else "📊 Sample"
-        st.markdown(f"""
+        st.html(f"""
         <div class="metric-container">
             <h3>⏱️ Data Type</h3>
             <h1>{data_type}</h1>
         </div>
-        """, unsafe_allow_html=True)
+        """)
     
     with col4:
         last_update = datetime.now().strftime('%H:%M:%S')
-        st.markdown(f"""
+        st.html(f"""
         <div class="metric-container">
             <h3>🔄 Updated</h3>
             <h1>{last_update}</h1>
         </div>
-        """, unsafe_allow_html=True)
+        """)
 
 def render_current_rankings(df):
     """Render current candidate rankings"""
@@ -287,7 +287,7 @@ def render_current_rankings(df):
         max_percent = df['percent'].max()
         progress_width = (percent / max_percent * 100) if max_percent > 0 else 0
         
-        st.markdown(f"""
+        st.html(f"""
         <div style="
             background-color: #ffffff;
             padding: 1rem;
@@ -313,7 +313,7 @@ def render_current_rankings(df):
                 </div>
             </div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
 
 def render_simple_charts(df):
     """Render simple charts using Streamlit native functionality"""
@@ -472,12 +472,11 @@ def main():
     st.markdown("---")
     footer_status = "🟢 Live Data" if is_live else "🔴 Demo Mode"
     api_status = "Connected" if is_live else "Offline"
-    st.markdown(
+    st.html(
         "<div style='text-align: center; color: #7f8c8d;'>"
         f"🗳️ YVote Live Monitor | {footer_status} | API: {api_status} | "
         f"Last Updated: {datetime.now().strftime('%H:%M:%S')}"
-        "</div>", 
-        unsafe_allow_html=True
+        "</div>"
     )
 
 # === RUN DASHBOARD ===
