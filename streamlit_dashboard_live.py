@@ -342,7 +342,7 @@ def render_simple_charts(df):
                 'Votes': '{:,}',
                 'Percentage (%)': '{:.2f}'
             }).background_gradient(subset=['Votes'], cmap='viridis'),
-            width=None,
+            width='stretch',
             height=400
         )
 
