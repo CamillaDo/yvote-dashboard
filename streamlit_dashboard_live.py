@@ -368,12 +368,12 @@ def render_sidebar(df, is_live, status_message):
     col1, col2 = st.sidebar.columns(2)
     
     with col1:
-        if st.button("🔄 Refresh", width=None):
+        if st.button("🔄 Refresh", width='stretch'):
             st.cache_data.clear()
             st.rerun()
     
     with col2:
-        if st.button("🧹 Clear Cache", width=None):
+        if st.button("🧹 Clear Cache", width='stretch'):
             st.cache_data.clear()
             st.success("Cache cleared!")
     
