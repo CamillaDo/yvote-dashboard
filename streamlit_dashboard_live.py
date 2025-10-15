@@ -10,6 +10,7 @@ import streamlit as st
 import pandas as pd
 import requests
 import json
+import re
 import time
 from datetime import datetime, timedelta
 import numpy as np
@@ -70,39 +71,116 @@ st.html("""
 """)
 
 # === API CONFIGURATION ===
+# Using Jina.ai to access the YVote API (bypasses CORS/Cloudflare issues)
 API_ENDPOINT = "https://r.jina.ai/https://yvoting-service.onfan.vn/api/v1/nominations/spotlight"
 AWARD_ID = "58e78a33-c7c9-4bd4-b536-f25fa75b68c2"
 
 # === DATA LOADING FUNCTIONS ===
+
+def parse_jina_response(response_text):
+    """
+    Parse Jina.ai response to extract JSON data from markdown content.
+    
+    Jina.ai returns format like:
+    Title: 
+    URL Source: https://yvoting-service.onfan.vn/api/v1/nominations/spotlight?awardId=...
+    Markdown Content:
+    {actual json data with potential embedded newlines}
+    """
+    try:
+        lines = response_text.strip().split('\n')
+        
+        # Find the "Markdown Content:" line
+        markdown_start_idx = None
+        for i, line in enumerate(lines):
+            if line.strip().lower().startswith('markdown content:'):
+                markdown_start_idx = i + 1
+                break
+        
+        if markdown_start_idx is None:
+            # Try alternative parsing - look for first { character
+            for i, line in enumerate(lines):
+                if line.strip().startswith('{'):
+                    markdown_start_idx = i
+                    break
+        
+        if markdown_start_idx is None:
+            raise ValueError("Could not find JSON content in Jina.ai response")
+        
+        # Extract everything after "Markdown Content:" line
+        json_content = '\n'.join(lines[markdown_start_idx:]).strip()
+        
+        # Remove any potential markdown code block markers
+        if json_content.startswith('```json'):
+            json_content = json_content[7:]
+        if json_content.startswith('```'):
+            json_content = json_content[3:]
+        if json_content.endswith('```'):
+            json_content = json_content[:-3]
+        
+        # Clean up the JSON content - the raw string contains actual newlines in JSON string values
+        # which need to be properly escaped for valid JSON parsing
+        json_content = json_content.strip()
+        
+        # Fix unescaped newlines in JSON string values        
+        # Function to escape newlines and control characters within JSON strings
+        def escape_newlines_in_strings(match):
+            string_content = match.group(1)
+            # Escape newlines and other control characters within the string
+            escaped = string_content.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+            return f'"{escaped}"'
+        
+        # Find all JSON string values and escape newlines within them
+        # This regex finds quoted strings in JSON and handles escaped quotes properly
+        json_content = re.sub(r'"([^"\\]*(\\.[^"\\]*)*)"', escape_newlines_in_strings, json_content)
+        
+        # Parse the cleaned JSON
+        parsed_data = json.loads(json_content)
+        return parsed_data
+        
+    except json.JSONDecodeError as e:
+        # If JSON parsing fails, try to provide more context
+        try:
+            # Get a snippet around the error location
+            error_pos = getattr(e, 'pos', 0)
+            start = max(0, error_pos - 50)
+            end = min(len(json_content), error_pos + 50)
+            context = json_content[start:end]
+            raise ValueError(f"JSON parsing failed at position {error_pos}: {str(e)}\nContext: ...{context}...")
+        except:
+            raise ValueError(f"JSON parsing failed: {str(e)}")
+    except Exception as e:
+        raise ValueError(f"Failed to parse Jina.ai response: {str(e)}")
+
 @st.cache_data(ttl=30)  # Cache for 30 seconds
 def fetch_live_data():
-    """Fetch live data from YVote API with correct structure handling"""
+    """Fetch live data from YVote API via Jina.ai with post-processing"""
     try:
-        # Working headers that bypass Cloudflare
+        # Working headers for Jina.ai
         headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/plain, */*',
+            'Accept': 'text/plain, */*',
             'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',
             'DNT': '1',
             'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1',
-            'Sec-Fetch-Dest': 'document',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Site': 'none',
             'Cache-Control': 'max-age=0'
         }
         
-        # Make API request
+        # Make API request to Jina.ai
         response = requests.get(
             API_ENDPOINT,
             params={"awardId": AWARD_ID},
-            # headers=headers,
+            headers=headers,
             timeout=15
         )
         
         if response.status_code == 200:
-            data = response.json()
+            # Parse Jina.ai response to extract JSON
+            try:
+                data = parse_jina_response(response.text)
+            except ValueError as parse_error:
+                return pd.DataFrame(), 0, False, f"❌ Jina.ai parsing error: {str(parse_error)}"
             
             # Check if API response is successful
             if data.get('success', False) and 'data' in data:
@@ -397,15 +475,17 @@ def render_sidebar(df, is_live, status_message):
         
         **Status:** {"🟢 Connected" if is_live else "🔴 Offline"}
         
-        **Data Structure:** Fixed for correct API format
+        **Via:** Jina.ai (bypasses CORS/Cloudflare)
+        
+        **Data Processing:** Auto-extracts JSON from Jina.ai markdown response
         """)
     
     # Live Data Details
     if is_live and not df.empty:
         with st.sidebar.expander("📈 Live Data Info"):
             st.write("""
-            **Data Source:** YVote API
-            **Format:** JSON with nominations array
+            **Data Source:** YVote API via Jina.ai
+            **Format:** JSON extracted from markdown
             **Fields:** ratioVotes, character info, status
             **Ranking:** Based on ratioVotes percentage
             """)
@@ -413,6 +493,34 @@ def render_sidebar(df, is_live, status_message):
             # Show data freshness
             st.write(f"**Last API Call:** {datetime.now().strftime('%H:%M:%S')}")
             st.write(f"**Cache TTL:** 30 seconds")
+    
+    # Debug section (optional)
+    if st.sidebar.checkbox("🐛 Debug Mode", value=False):
+        with st.sidebar.expander("🔍 Debug Information"):
+            st.write("**Raw Response Analysis:**")
+            if st.button("🔄 Test Jina.ai Response"):
+                try:
+                    debug_response = requests.get(
+                        API_ENDPOINT,
+                        params={"awardId": AWARD_ID},
+                        timeout=10
+                    )
+                    if debug_response.status_code == 200:
+                        st.text_area("Raw Jina.ai Response:", 
+                                   debug_response.text[:1000] + "..." if len(debug_response.text) > 1000 else debug_response.text,
+                                   height=200)
+                        
+                        # Try parsing
+                        try:
+                            parsed = parse_jina_response(debug_response.text)
+                            st.success("✅ JSON parsing successful")
+                            st.json({"sample_keys": list(parsed.keys()) if isinstance(parsed, dict) else "Non-dict response"})
+                        except Exception as e:
+                            st.error(f"❌ Parsing failed: {str(e)}")
+                    else:
+                        st.error(f"❌ HTTP {debug_response.status_code}")
+                except Exception as e:
+                    st.error(f"❌ Request failed: {str(e)}")
     
     # Quick stats
     if not df.empty:
