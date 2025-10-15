@@ -171,7 +171,7 @@ def fetch_live_data():
         response = requests.get(
             API_ENDPOINT,
             params={"awardId": AWARD_ID},
-            headers=headers,
+            # headers=headers,
             timeout=15
         )
         
