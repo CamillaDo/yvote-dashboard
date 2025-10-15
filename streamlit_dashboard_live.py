@@ -60,7 +60,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # === API CONFIGURATION ===
-API_ENDPOINT = "https://yvoting-service.onfan.vn/api/v1/nominations/spotlight"
+API_ENDPOINT = "https://r.jina.ai/https://yvoting-service.onfan.vn/api/v1/nominations/spotlight"
 AWARD_ID = "58e78a33-c7c9-4bd4-b536-f25fa75b68c2"
 
 # === DATA LOADING FUNCTIONS ===
