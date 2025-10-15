@@ -70,7 +70,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # === API CONFIGURATION ===
-API_ENDPOINT = "https://yvoting-service.onfan.vn/api/v1/nominations/spotlight"
+API_ENDPOINT = "https://r.jina.ai/https://yvoting-service.onfan.vn/api/v1/nominations/spotlight"
 AWARD_ID = "58e78a33-c7c9-4bd4-b536-f25fa75b68c2"
 
 # === DATA LOADING FUNCTIONS ===
@@ -342,7 +342,7 @@ def render_simple_charts(df):
                 'Votes': '{:,}',
                 'Percentage (%)': '{:.2f}'
             }).background_gradient(subset=['Votes'], cmap='viridis'),
-            use_container_width=True,
+            width=None,
             height=400
         )
 
@@ -368,12 +368,12 @@ def render_sidebar(df, is_live, status_message):
     col1, col2 = st.sidebar.columns(2)
     
     with col1:
-        if st.button("🔄 Refresh", use_container_width=True):
+        if st.button("🔄 Refresh", width=None):
             st.cache_data.clear()
             st.rerun()
     
     with col2:
-        if st.button("🧹 Clear Cache", use_container_width=True):
+        if st.button("🧹 Clear Cache", width=None):
             st.cache_data.clear()
             st.success("Cache cleared!")
     
